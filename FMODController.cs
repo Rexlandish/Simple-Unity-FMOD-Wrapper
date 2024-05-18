@@ -233,7 +233,7 @@ public class FMODController : MonoBehaviour
 
     public FMODEventInstanceWrapper FindEvent(string eventName)
     {
-        var result = events.Find(_ => _.eventName == "event:/" + eventName);
+        var result = events.Find(_ => _.eventName == eventName);
         if (result != null)
         {
             return result;
