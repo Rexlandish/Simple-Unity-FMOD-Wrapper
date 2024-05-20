@@ -8,6 +8,7 @@ using Unity.Mathematics;
 using System.Linq;
 using STOP_MODE = FMOD.Studio.STOP_MODE;
 
+
 [Serializable]
 public class FMODEventInstanceWrapper
 {
@@ -28,6 +29,12 @@ public class FMODEventInstanceWrapper
         SetParameterUnscaled(parameter, value);
     }
 
+
+    public void SetFirstParameter(float value)
+    {
+        FMODParameterWrapper parameter = parameters[0];
+        SetParameter(parameter, value);
+    }
 
     public void SetParameter(FMODParameterWrapper parameter, float value)
     {
@@ -59,6 +66,11 @@ public class FMODController : MonoBehaviour
     public static FMODController instance;
 
     public List<FMODEventInstanceWrapper> events = new();
+
+    public void SetValue(float f)
+    {
+        events[0].SetFirstParameter(f);
+    }
 
     public void Awake()
     {
@@ -231,11 +243,12 @@ public class FMODController : MonoBehaviour
         }
     }
 
-    public FMODEventInstanceWrapper FindEvent(string eventName)
+    public FMODEventInstanceWrapper FindEvent(string eventName, bool addIfNotExist = false)
     {
         var result = events.Find(_ => _.eventName == eventName);
         if (result != null)
         {
+            print($"Found result {result.eventName}");
             return result;
         }
 
@@ -252,29 +265,64 @@ public class FMODController : MonoBehaviour
         }
         */
     }
-    public FMODEventInstanceWrapper FindEvent(EventInstance eventInstance)
+
+    public bool IsEventPlaying(string eventName, bool addIfNotExist = false)
     {
-        return events.Find(_ => _.eventInstance.Equals(eventInstance));
+        var result = events.Find(_ => _.eventName == eventName);
+        if (result != null)
+        {
+            return true;
+        }
+
+        return false;
+
+        /*
+        if (addIfNotExist)
+        {
+            return PlayEvent(eventName);
+        }
+        else
+        {
+            return null;
+        }
+        */
+    }
+
+    public FMODEventInstanceWrapper FindEvent(EventInstance eventInstance, bool addIfNotExist = false)
+    {
+        return events.Find(_ => _.eventInstance.GetHashCode() == eventInstance.GetHashCode());
     }
 
     public int FindEventIndex(string eventName)
     {
-        int eventIndex = events.FindIndex(_ => _.eventName == "event:/" + eventName);
+        int eventIndex = events.FindIndex(_ => _.eventName == eventName);
         return eventIndex;
     }
 
-    public EventInstance FindEventInstance(string eventName)
+    public FMOD.Studio.EventInstance FindEventInstance(string eventName)
     {
-        print("Looking for " + eventName);
-        foreach (var event_ in events)
-        {
-            print(event_.eventName);
-            print(event_.eventName == eventName);
-
-        }
-
         return events.Find(_ => _.eventName == eventName).eventInstance;
     }
+
+    public FMODEventInstanceWrapper GetWrapper(FMOD.Studio.EventInstance eventInstance)
+    {
+        return events.Find(_ => _.eventInstance.Equals(eventInstance));
+    }
+
+    public EventInstance BindEventToGameObjectAndPlay(string instanceName, GameObject gameObject)
+    {
+        var instance = PlayEvent(instanceName);
+        RuntimeManager.AttachInstanceToGameObject(instance, gameObject.transform);
+        //PlayEventCoroutine(instance);
+        return instance;
+    }
+
+    public void BindEventToGameObjectAndPlay(EventInstance instance, GameObject gameObject)
+    {
+        RuntimeManager.AttachInstanceToGameObject(instance, gameObject.transform);
+        PlayEventCoroutine(instance);
+    }
+
 
     public void CheckForFinishedEvents()
     {
